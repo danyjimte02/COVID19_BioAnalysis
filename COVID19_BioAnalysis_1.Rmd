@@ -1,0 +1,167 @@
+---
+title: "Análisis del virus SARS-CoV-2 desde una perspectiva biológica: Análisis Inicial"
+author: "Daniela Jiménez Téllez"
+date: "Abril, 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introducción
+
+> De acuerdo con la universidad de medicina John Hopkins, la pandemia por COVID-19 ha tenido un total de 3,095,018 muertes y 84,064,884 recuperaciones, siendo Estados Unidos el país con más muertos e India el que más ha tenido personas recuperadas. En base a esto, se puede decir que hay más personas recuperadas que muertas debido al virus; sin embargo, hay muchas variables, tales como la edad, acceso a servicios médicos, problemas de salud, entre otros, que influyen en quienes sobreviven y quienes no. Hoy en día hay 146,042,160 casos activos a nivel mundial, siendo Estados Unidos, India y Brazil los tres países más contagiados respectivamente. Igualmente, se han creado varias vacunas, tales como son la de Pfizer, Moderna, Janssen, entre otras, que han ayudado a combatir el virus. Estas están disponibles en diferentes países.
+
+
+![](/Users/danyjimte/Documents/covid_bio/images_1/mundial.png)
+
+> En el caso de México, actualmente hay 2,323,430 casos activos, de los cuales 1,845,008 se han recuperado y 214,504 han muerto. De acuerdo con el Gobierno de México, el estado con más infectados es la Ciudad de México con un total de 639,109 mil casos y una tasa de 7,053.27 infectados 100k/hab. Igualmente, es sabido que, al menos en la CDMX, las mujeres tienden más a contraer el virus que los hombres. En cuanto a los municipios, actualmente Tlalpan tiene 63,492 casos confirmados, 4,539 casos sospechosos y 1,723 muertes. En cuanto a las vacunas, la jefa de Gobierno, Claudia Sheinbaum, asegura que aproximadamente el 83% de las personas mayores que habitan la CDMX ya recibieron la primera dosis de la vacuna contra el COVID-19, 38% ya tienen la segunda dosis y que se intentará llegar al 49% durante las próximas semanas.
+  
+![](/Users/danyjimte/Documents/covid_bio/images_1/mexico.png)
+
+> Es bien sabido que los virus pueden mutar conforme pasa el tiempo. La primera variante fue D614G, la cual apareció un mes después que el virus SARS-CoV-2 fuera identificado. Esta tuvo un cambio en la proteína S con respecto al virus original, lo cual causó que el virus fuera más fácil de transmitirse de persona en persona y eso lo convirtió en la cepa más dominante durante el tiempo que va de pandemia.
+
+
+> De acuerdo con los Centros para el Control y la prevención de Enfermedades (CDC), existen otras variantes del virus SARS-CoV-2 a parte de D614G. Unas de las más relevantes son las siguientes: B.1.1.7, la cual se indentificó en Reino Unido y se estima que empezó a emerger desde septiembre del 2020. Esta ha infectado a diferentes países y de acuerdo con investigaciones científicas, esta cepa viene con más riesgo de muerte que otras y es más susceptible a ser contagiada. Igualmente está B.1.35, la cual fue identificada por primera vez en Sudáfrica y tiene múltiples mutaciones en la proteína. A parte de esto, quien llegue a contraer esta variante es más propenso a tener una mayor cantidad de virus en su sistema y es más fácil que contagie a otras personas. Por otro lado, está la variante P.1, la cual se identificó por primera vez en cuatro viajeros que venían de Brasil. Esta cepa, al igual que B.1.35, tiene mutaciones en la proteína S, tal como la variante E484K, la cual causa que los anticuerpos no reconozcan y neutralicen el virus. Por último, están  B.1.427 y B.1.429, las cuales se identificaron por primera vez en California en febrero del 2021. 
+
+
+> Es importante estar conscientes de lo que sucede en el mundo y en nuestro país, así que si es que si yo tuviera que encontrar información de alguna variante del SARS-CoV-2 en México, lo primero que haría es buscar información general de esta, tal como sus efectos, diferencias a otras cepas, lugar de origen, entre otros. Una vez sabiendo eso, buscaría sobre casos que se han presentado en todo el mundo y ver cómo se ha manejado la situación, ya que hay veces donde se puede contener la variante y así no se propaga. Si es que no es la situación, buscaría noticias acerca del COVID-19 en México, los casos que están activos, muertes y anomalías en los síntomas de nuevos casos. Igualmente, tomaría en cuenta qué tipo de personas son más propensas a contraer el virus para así poder centrar más en dónde buscar. 
+
+> Li Wenliang es un médico chino, el cual intentó alertar sobre el brote de coronavirus en su país, pero fue detenido por las autoridades y obligado a retractarse. Si yo hubiera estado en una situación similar a la suya, hubiera optado por reportar lo que sospechaba sobre el coronavirus al centro de investigación o a la universidad. Creo que muchas veces la información que llega a la prensa puede pasar por desapercibida o no se le da la suficiente importancia. Igualmente, si informo al centro de investigación, sé que son personas serias y dedicadas a su trabajo, por lo que esperaría que se preocupen ya que es algo que no solo me afectaría a mí, pero a todo el mundo. Además de eso, se haría una investigación profesional, la cual después de ser probada cierta, se podría llevar a la prensa y sería más creíble ya que habrían bases y pruebas de que no solo son especulaciones o ideas. Por otro lado, creo que guardar la información sería algo egoísta. Entiendo que pueden haber muchas cosas en juego ya que la policía se vio involucrada, pero me gustaría hacer todo lo posible para prevenir algo como lo que lamentablemente estamos viviendo. 
+
+# Metodología
+
+#### Cargar librerías
+```{r, echo = FALSE}
+
+library("Biostrings")
+library("seqinr")
+library("ggplot2")
+library("stringr")
+
+```
+
+#### Importar datos
+```{r, echo = TRUE}
+
+uk <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_1/uk")
+brazil <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_1/brazil")
+ghana <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_1/ghana")
+
+# Esta función se ocupa para agarrar el primer elemento de cada secuencia, la cual contiene el genoma completo
+
+seq_uk <- uk$FR993745.1
+seq_brazil <- brazil$MW592707.1
+seq_ghana <- ghana$MW598408.1
+
+```
+
+#### Calcular la longitud de las secuencias de cada variante
+```{r, echo = TRUE}
+
+long_uk <- length(seq_uk)
+long_brazil <- length(seq_brazil)
+long_ghana <- length(seq_ghana)
+
+sprintf("La longitud de la secuencia de la variante de Reino Unido es de %s, por otro lado la de la variante de Brasil es de %s y la de Ghana es de %s.", long_uk, long_brazil, long_ghana)
+
+```
+
+
+#### Gráfica de comparación
+```{r, echo = TRUE}
+
+# Primero se tienen que convertir las secuencias a data frame, entonces se ocupa la función as.data.frame()
+
+limp_uk <- str_extract(seq_uk, "[actg]")
+data_uk <- as.data.frame(table(limp_uk))
+data_brazil <- as.data.frame(table(seq_brazil))
+data_ghana <- as.data.frame(table(seq_ghana))
+
+# Después, se tiene que agregar una columna para los países, luego se agregan los nombres de todas las columnas para así ya poder juntar todo en uno y así poder graficarlo
+
+data_uk <- cbind(data_uk, Lugar = "Reino Unido")
+data_brazil <- cbind(data_brazil, Lugar = "Brazil")
+data_ghana <- cbind(data_ghana, Lugar = "Ghana ")
+
+nombres <- c("Bases", "Cantidad", "Lugar")
+names(data_uk) <- c(nombres)
+names(data_brazil) <- c(nombres)
+names(data_ghana) <- c(nombres)
+
+var <- rbind(data_uk, data_brazil, data_ghana)
+
+ggplot(data = var) +
+  geom_col(mapping = aes(x = Bases, y = Cantidad, fill = Lugar), position = "dodge") +
+  scale_fill_manual(values = c("dodgerblue4", "lightpink", "darkseagreen3"))
+
+```
+
+> En la gráfica se muestra cuánto tiene cada variante de 'A', 'C', 'G' y 'T'. Tanto la secuencia de Brazil, Ghana y Reino Unido tienen más timina que cualquier otra base. Siguiendo de esta, está la adenina, luego la guanina y por último la citosina. Igualmente, nos podemos dar cuenta que la diferencia de cantidades es mínima entre las cepas. Esto se podría deber a que a pesar de que el virus mutó varias veces, sigue partiendo del virus original SARS-CoV-2. Igualmente, eso podría servir de explicación al por qué son tan pocas las diferencias entre cada uno, y como se dijo en la Parte 1, por qué ninguna de las cepas ha tenido un impacto mayor o muy diferente al que se tuvo por primera vez en el 2019.
+
+#### %GC de cada variante
+```{r, echo = TRUE}
+
+gc_uk <- GC(seq_uk)
+gc_brazil <- GC(seq_brazil)
+gc_ghana <- GC(seq_ghana)
+
+sprintf("El porcentaje GC para la variante de Reino Unido es %s, por otro lado, para la de Brasil es %s y para la de Ghana es %s.", gc_uk, gc_brazil, gc_ghana)
+```
+
+> El %GC expresa la cantidad de pares de Guanina y Citosina que tiene un genoma. En el caso de nuestras variantes, su porcentaje es casi el mismo ya que son cepas del virus SARS-CoV-2. Debido a que el porcentaje es bajo, quiere decir que no son tan fuertes. Esto se debe a que mientras mayor sea el Porcentaje GC, más fuerte y resistente es el enlace. 
+
+#### Secuencia complementaria de cada variante
+```{r, echo = TRUE}
+
+complementaria <- function(hebras){
+    
+    for (i in 1:length(hebras)) {
+      if (hebras[i] == 't') {
+        hebras[i] <- 'a'
+      } else if(hebras[i] == 'a') {
+        hebras[i] <- 't'
+      } else if(hebras[i] == 'c') {
+        hebras[i] <- 'g'
+      } else if(hebras[i] == 'g') {
+        hebras[i] <- 'c'
+      } else{ 
+        hebras[i] <- 'n'
+      }
+    }
+    
+    return(hebras)
+  }
+print("La secuencia complementaria de la variante de Reino Unido es:")
+print(complementaria(seq_uk[80:85]))
+print("La secuencia complementaria de la variante de Brazil es:")
+print(head(complementaria(seq_brazil)))
+print("La secuencia complementaria de la variante de Ghana es:")
+print(head(complementaria(seq_ghana)))
+
+```
+
+> La secuencia complementaria de un genoma o ADN se determina en base de la cadena directa. Cuando en la cadena base se encuentra el término 'A', su equivalente en la secuencia complementaria será 'T' y viceversa. Igualmente, cuando está 'C', esta cambiará por 'G' y al revés. 
+
+# Conclusión
+
+> Se puede concluir que el COVID-19 es un virus que ha afectado al mundo de gran manera. A pesar de que la mayoría de las personas sobrevive esta nueva enfermedad, han habido muchas muertes. En esto pueden influir muchas cosas, ya sea la edad, el acceso a servicios médicos, las enfermedades crónicas que puede sufrir una persona, entre otras. En cuanto a México, es uno de los países más afectados, siendo la Ciudad de México el estado con más contagios. A pesar de esto, ya se están implementando las vacunas contra este virus sin importar que falte mucho para vacunar a toda la población. 
+
+> A partir del virus SARS-CoV-2 se han creado diferentes cepas a lo largo del mundo. Las más relevantes serían las de Reino Unido, Brazil y Ghana. A pesar de que no tienen una gran diferencia al virus original, es importante seguir monitoreando cualquier anomalía, ya que pueden haber grandes consecuencias. Igualmente, a partir del análisis que se hizo, se puede decir que los genomas de estas variantes son muy similares y que la diferencia que puede llegar a haber entre ellos es mínima. 
+
+
+## Referencias
+
+> Centros para el Control y Prevención de Enfermedades. (2021, April 11). El COVID-19 Y Su salud. Centers for Disease Control and Prevention. https://espanol.cdc.gov/coronavirus/2019-ncov/transmission/variant.html
+
+> Gobierno de México. (n.d.). COVID - 19 Tablero México. https://datos.covid-19.conacyt.mx/
+
+> John Hopkins University. (n.d.). COVID-19 map. Johns Hopkins Coronavirus Resource Center. https://coronavirus.jhu.edu/map.html
+
+> Longino, J. (2021, February 22). New COVID variants: What you should know. Tecnológico de Monterrey. https://tec.mx/en/news/national/health/new-covid-variants-what-you-should-know
+
+> Staff, F. (2021, April 26). En Iztapalapa Y Tlalpan posponen vacunas contra COVID-19, aún no llegan. Forbes México. https://www.forbes.com.mx/en-iztapalapa-y-tlalpan-posponen-vacunas-contra-covid-19-aun-no-llegan/
+
+
+

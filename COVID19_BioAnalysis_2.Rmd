@@ -1,0 +1,299 @@
+---
+title: "Análisis del virus SARS-CoV-2 desde una perspectiva biológica: Países con más casos reportados"
+author: "Daniela Jiménez Téllez"
+date: "Abril, 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introducción
+
+> El SARS-CoV-2 es un virus perteneciente a la familia de los coronavirus que apareció por primera vez en China en el 2019. Este es el causante del COVID-19 y tiene una tasa alta de contagio. Se transmite a través de fómites, que son objetos sin vida que tienen la capacidad de transferir cualquier tipo de virus, bacteria, hongo o parásito del que estén infectados. Igualmente, se transmite a través de gotitas que se puedan intercambiar durante el contacto entre las personas que cargan este virus y con las que no. Es por eso que se necesitan medidas sanitarias que nos ayuden a prevenir el contagio.
+
+> De acuerdo con la Universidad de Medicina John Hopkins, hoy en día hay 150,068,372 casos de COVID-19 a nivel mundial. A continuación se mostrarán los primeros 20 países con más casos: 
+
+![](/Users/danyjimte/Documents/covid_bio/images_2/ranking.png)
+
+# Metodología
+
+#### Cargar librerías
+```{r, echo = FALSE}
+
+library("Biostrings")
+library("seqinr")
+library("ggplot2")
+library("stringr")
+library("ape")
+library("phytools")
+library("phangorn")
+library("adegenet")
+library("ggtree")
+library("DECIPHER")
+library("viridis")
+library("ggmsa")
+
+```
+
+#### Importar datos
+```{r, echo = TRUE}
+
+# Secuencias de las variantes 
+
+usa <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/usa")
+india <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/india")
+brazil <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/brasil")
+francia <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/francia")
+turquia <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/turquia")
+rusia <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/rusia")
+uk <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/uk")
+italia <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/italia")
+espania <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/espania")
+alemania <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/alemania")
+argentina <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/argentina")
+colombia <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/colombia")
+polonia <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/polonia")
+iran <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/iran")
+mexico <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/mexico")
+peru <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/peru")
+indonesia <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/indonesia")
+rep_checa <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/rep_checa")
+sudafrica <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/sudafrica")
+holanda <- read.fasta("/Users/danyjimte/Documents/covid_bio/data_2/holanda")
+
+
+seq_usa <- usa$MW811435.1
+seq_india <- india$MW927136.1
+seq_brazil <- brazil$MW592707.1
+seq_francia <- francia$MW322968.1
+seq_turquia <- turquia$MW306668.1
+seq_rusia <- rusia$MW741552.1
+seq_uk <- uk$FR993745.1
+seq_italia <- italia$MW854297.1
+seq_espania <- espania$MW375731.1
+seq_alemania <- alemania$MW822592.1
+seq_argentina <- argentina$MW633906.1
+seq_colombia <- colombia$MT470219.1
+seq_polonia <- polonia$MW273892.1
+seq_iran <- iran$MW898809.1
+seq_mexico <- mexico$MW595908.1
+seq_peru <- peru$MT263074.1
+seq_indonesia <- indonesia$MZ026853.1
+seq_rep_checa <- rep_checa$MT517434.1
+seq_sudafrica <- sudafrica$MW981442.1
+seq_holanda <- holanda$MW577029.1
+
+nom <- c("Estados Unidos", "India", "Brasil", "Francia", "Turquía", "Rusia", "Reino Unido", "Italia", "España", "Alemania", "Argentina", "Colombia", "Polonia", "Iran", "México", "Peru", "Indonesia", "República Checa", "Sudáfrica", "Holanda")
+
+```
+
+#### Calcular la longitud de las secuencias 
+```{r, echo = TRUE}
+
+long_usa <- length(seq_usa)
+long_india <- length(seq_india)
+long_brazil <- length(seq_brazil)
+long_francia <- length(seq_francia)
+long_turquia <- length(seq_turquia)
+long_rusia <- length(seq_rusia)
+long_uk <- length(seq_uk)
+long_italia <- length(seq_italia)
+long_espania <- length(seq_espania)
+long_alemania <- length(seq_alemania)
+long_argentina <- length(seq_argentina)
+long_colombia <- length(seq_colombia)
+long_polonia <- length(seq_polonia)
+long_iran <- length(seq_iran)
+long_mexico <- length(seq_mexico)
+long_peru <- length(seq_peru)
+long_indonesia <- length(seq_indonesia)
+long_rep_checa <- length(seq_rep_checa)
+long_sudafrica <- length(seq_sudafrica)
+long_holanda <- length(seq_holanda)
+
+long_tot <- data.frame("Número" = c(1:20), "País" = nom, "Longitud" = c(long_usa, long_india, long_brazil, long_francia, long_turquia, long_rusia, long_uk, long_italia, long_espania, long_alemania, long_argentina, long_colombia, long_polonia, long_iran, long_mexico, long_peru, long_indonesia, long_rep_checa, long_sudafrica, long_holanda))
+
+print(long_tot)
+
+
+```
+
+#### Gráfica de comparación
+```{r, echo = TRUE}
+
+# Primero se tienen que limpiar las secuencias para que solo queden las bases ACGT
+
+limp_usa <- str_extract(seq_usa, "[actg]")
+limp_india <- str_extract(seq_india, "[actg]")
+limp_brazil <- str_extract(seq_brazil, "[actg]")
+limp_francia <- str_extract(seq_francia, "[actg]")
+limp_turquia <- str_extract(seq_turquia, "[actg]")
+limp_rusia <- str_extract(seq_rusia, "[actg]")
+limp_uk <- str_extract(seq_uk, "[actg]")
+limp_italia <- str_extract(seq_italia, "[actg]")
+limp_espania <- str_extract(seq_espania, "[actg]")
+limp_alemania <- str_extract(seq_alemania, "[actg]")
+limp_argentina <- str_extract(seq_argentina, "[actg]")
+limp_colombia <- str_extract(seq_colombia, "[actg]")
+limp_polonia <- str_extract(seq_polonia, "[actg]")
+limp_iran <- str_extract(seq_iran, "[actg]")
+limp_mexico <- str_extract(seq_mexico, "[actg]")
+limp_peru <- str_extract(seq_peru, "[actg]")
+limp_indonesia <- str_extract(seq_indonesia, "[actg]")
+limp_rep_checa <- str_extract(seq_rep_checa, "[actg]")
+limp_sudafrica <- str_extract(seq_sudafrica, "[actg]")
+limp_holanda <- str_extract(seq_holanda, "[actg]")
+
+# Una vez que estén filtradas las secuencias se tienen que convertir a dataframe
+
+data_usa <- as.data.frame(table(limp_usa))
+data_india <- as.data.frame(table(limp_india))
+data_brazil <- as.data.frame(table(limp_brazil))
+data_francia <- as.data.frame(table(limp_francia))
+data_turquia <- as.data.frame(table(limp_turquia))
+data_rusia <- as.data.frame(table(limp_rusia))
+data_uk <- as.data.frame(table(limp_uk))
+data_italia <- as.data.frame(table(limp_italia))
+data_espania <- as.data.frame(table(limp_espania))
+data_alemania <- as.data.frame(table(limp_alemania))
+data_argentina <- as.data.frame(table(limp_argentina))
+data_colombia <- as.data.frame(table(limp_colombia))
+data_polonia <- as.data.frame(table(limp_polonia))
+data_iran <- as.data.frame(table(limp_iran))
+data_mexico <- as.data.frame(table(limp_mexico))
+data_peru <- as.data.frame(table(limp_peru))
+data_indonesia <- as.data.frame(table(limp_indonesia))
+data_rep_checa <- as.data.frame(table(limp_rep_checa))
+data_sudafrica <- as.data.frame(table(limp_sudafrica))
+data_holanda <- as.data.frame(table(limp_holanda))
+
+# Después de esto, se tiene que agregar una columna con los nombres de los países y las variantes, después se agregan los nombres de todas las columnas para poder juntar todo y graficar
+
+data_usa <- cbind(data_usa, País = "Estados Unidos (MW811435.1)")
+data_india <- cbind(data_india, País = "India (MW927136.1)")
+data_brazil <- cbind(data_brazil, País = "Brasil (MW592707.1)")
+data_francia <- cbind(data_francia, País = "Francia (MW322968.1)")
+data_turquia <- cbind(data_turquia, País = "Turquía (MW306668.1)")
+data_rusia <- cbind(data_rusia, País = "Rusia (MW741552.1)")
+data_uk <- cbind(data_uk, País = "Reino Unido (FR993745.1)")
+data_italia <- cbind(data_italia, País = "Italia (MW854297.1)")
+data_espania <- cbind(data_espania, País = "España (MW375731.1)")
+data_alemania <- cbind(data_alemania, País = "Alemania (MW822592.1)")
+data_argentina <- cbind(data_argentina, País = "Argentina (MW633906.1)")
+data_colombia <- cbind(data_colombia, País = "Colombia (MT470219.1)")
+data_polonia <- cbind(data_polonia, País = "Polonia (MW273892.1)")
+data_iran <- cbind(data_iran, País = "Iran (MW898809.1)")
+data_mexico <- cbind(data_mexico, País = "México (MW595908.1)")
+data_peru <- cbind(data_peru, País = "Perú (MT263074.1)")
+data_indonesia <- cbind(data_indonesia, País = "Indonesia (MZ026853.1)")
+data_rep_checa <- cbind(data_rep_checa, País = "República Checa (MT517434.1)")
+data_sudafrica <- cbind(data_sudafrica, País = "Sudáfrica (MW981442.1)")
+data_holanda <- cbind(data_holanda, País = "Holanda (MW577029.1)")
+
+nombres <- c("Bases", "Cantidad", "País")
+
+names(data_usa) <- c(nombres)
+names(data_india) <- c(nombres)
+names(data_brazil) <- c(nombres)
+names(data_francia) <- c(nombres)
+names(data_turquia) <- c(nombres)
+names(data_rusia) <- c(nombres)
+names(data_uk) <- c(nombres)
+names(data_italia) <- c(nombres)
+names(data_espania) <- c(nombres)
+names(data_alemania) <- c(nombres)
+names(data_argentina) <- c(nombres)
+names(data_colombia) <- c(nombres)
+names(data_polonia) <- c(nombres)
+names(data_iran) <- c(nombres)
+names(data_mexico) <- c(nombres)
+names(data_peru) <- c(nombres)
+names(data_indonesia) <- c(nombres)
+names(data_rep_checa) <- c(nombres)
+names(data_sudafrica) <- c(nombres)
+names(data_holanda) <- c(nombres)
+
+var <- rbind(data_usa, data_india, data_brazil, data_francia, data_turquia, data_rusia, data_uk, data_italia, data_espania, data_alemania, data_argentina, data_colombia, data_polonia, data_iran, data_mexico, data_peru, data_indonesia, data_rep_checa, data_sudafrica, data_holanda)
+
+ggplot(data = var) +
+  geom_col(mapping = aes(x = Bases, y = Cantidad, fill = País), position = "dodge") 
+
+```
+
+> Se sabe que los virus mutan conforme pasa el tiempo, esto causa que aparezcan cepas. En el caso del SARS-CoV-2 se han encontrado diferentes variantes a lo largo del mundo. Para esta evidencia se eligieron 20 países de los cuales se investigaron sus cepas correspondientes. Como se puede ver en la tabla, las secuencias de estas variantes son muy similares entre sí, ya que tienen casi la misma cantidad de bases ACTG. Esto quiere decir que a pesar de que el virus haya mutado, es muy poca la diferencia y las consecuencias que pueden existir no están muy alejadas de las que ya existen por el virus original. En cuanto a las variantes del COVID-19 se puede decir que lo más relevante que cambió del primer virus fue la tasa de contagios, ya que debido a la mutación en la proteína S, es más fácil que las personas contraigan el virus. 
+
+#### Análisis jerárquico global 
+```{r, echo = TRUE}
+
+#Primero se descargan los archivos GenBank
+
+gen <- c("MW811435.1", "MW927136.1", "MW592707.1", "MW322968.1", "MW306668.1", "MW741552.1", "FR993745.1", "MW854297.1", "MW375731.1", "MW822592.1", "MW633906.1", "MT470219.1", "MW273892.1", "MW898809.1", "MW595908.1", "MT263074.1", "MZ026853.1", "MT517434.1", "MW981442.1", "MW577029.1")
+
+seq_gen <- read.GenBank(gen)
+
+str(seq_gen)
+attr(seq_gen, "nom")
+
+# Concentramos en un archivo todas las secuencias
+
+write.dna(seq_gen, file = "seq_gen.fasta", format = "fasta", append = FALSE, nbcol = 6, colsep = " ", colw = 10)
+
+# Cargamos las secuencias no alineadas y las alineamos
+
+no_alineados <- readDNAStringSet("seq_gen.fasta", format = "fasta")
+no_alineados <- OrientNucleotides(no_alineados)
+alineados <- AlignSeqs(no_alineados)
+
+# Aquí se puede ver el alineamiento 
+
+BrowseSeqs(alineados, highlight = 0)
+
+# Se guarda el archivo y se tiene el resultado
+
+writeXStringSet(alineados, file = "seq_alineada.fasta")
+alineada <- read.alignment("seq_alineada.fasta", format = "fasta") 
+
+# Se hace una matriz de distancia donde se pueden ver las sombras, de las cuales las oscuras son las más distantes
+
+distancia <- dist.alignment(alineada, matrix = "similarity")
+temp <- as.data.frame(as.matrix(distancia))
+table.paint(temp, cleg=0, clabel.row=.5, clabel.col=.5) + scale_color_viridis()
+
+# Se crea el árbol y se grafica
+
+arbol <- nj(distancia)
+class(arbol)
+plot(arbol)
+
+# Alineamiento de la secuencia
+
+ggmsa(no_alineados, 320, 360, color = "Chemistry_AA")
+ggmsa(alineados, 320, 360, color = "Chemistry_AA")
+
+# Árbol vs secuencia
+
+plot_arbol <- ggtree(arbol) + geom_tiplab()
+data = tidy_msa(alineados, 164, 213)
+plot_arbol + geom_facet(geom = geom_msa,
+						data = data,
+						panel = 'msa',
+						color = "Chemistry_AA") #+
+		    xlim_tree(1)
+
+```
+
+> En base al árbol filogenético se puede decir que la variante de Holanda y la de Colombia son similares, igualmente que estas se relacionan con la de Francia, la que a su vez se relaciona con la cepa de Indonesia. Se puede seguir el árbol, que muestra como se relacionan. Como ya se explicó antes, las secuencias de estas variantes son muy similares y eso se puede ver cuando se alinea la secuencia. Además, no se encuentra una diferencia entre las cepas que afectan las poblaciones Asiáticas, Hispanas, Europeas o Africanas, ya que todas están relacionadas entre sí de una manera muy igual. 
+
+# Conclusión
+
+> Se puede concluir que el SARS-CoV-2 es un virus identificado por primera vez en China en el 2019. Este es de alto contagio y es por eso que es necesario tener precausiones para prevenir que se expanda más de lo que ya está. Las variantes de un virus son comunes ya que este muta con el tiempo. Igualmente, las cepas que han habido del virus SARS-CoV-2 son muy similares entre sí. Esto se puede ver en la gráfica que compara las bases de las secuencias, donde se observa que las 20 secuencias diferentes tienen aproximadamente el mismo número de adenina, citosina, guanina y timina. Es muy importante saber esto ya que cuando aparece una nueva variante pueden haber consecuencias graves. En cuanto a las que se han visto hasta ahora del COVID-19, no son tran diferentes a las del virus original, mas es importante estar al pendiente por si llegara surgir alguna anomalía que hiciera que el virus se volviera más agresivo y las tasas de contagios, muertes, etcétera, se puedan ver afectadas. Finalmente, no está de más decir que hay que ser cuidadosos para evitar que sigan apareciendo cepas. Podemos empezar por tomar las medidas necesarias e intentar salir lo menos posible, porque como se dijo antes, el virus es muy contagioso. 
+
+## Referencias
+
+> Wang MY, Zhao R, Gao LJ, Gao XF, Wang DP, Cao JM. SARS-CoV-2: Structure, Biology, and Structure-Based Therapeutics Development. Front Cell Infect Microbiol. 2020 Nov 25;10:587269. doi: 10.3389/fcimb.2020.587269. PMID: 33324574; PMCID: PMC7723891.
+
+> John Hopkins University. (n.d.). COVID-19 map. Johns Hopkins Coronavirus Resource Center. https://coronavirus.jhu.edu/map.html
+
+
